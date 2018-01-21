@@ -37,8 +37,6 @@ impl EventHandler for Handler {
 }
 
 fn main() {
-    // This will load the environment variables located at `./.env`, relative to
-    // the CWD. See `./.env.example` for an example on how to structure this.
     kankyo::load().expect("Failed to load .env file");
     env_logger::init();
 
@@ -116,17 +114,6 @@ command!(today(_ctx, msg, _args) {
         })),
         None => msg.channel_id.say("Invalid date."),
     };
-    ()
-});
-
-command!(help(_ctx, msg, _args) {
-    let _ = msg.channel_id.send_message(|m| m
-        .embed(|e| {
-            let mut e = e
-                .title("Garfield help")
-                .field("Help", "=today, todays comic\n=date yyyy-mm-dd, get a comic\n=random, random comic\n=info, this message", false);
-            e
-        }));
     ()
 });
 

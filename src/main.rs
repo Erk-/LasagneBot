@@ -12,11 +12,8 @@ use serenity::model::event::ResumedEvent;
 use serenity::model::gateway::Ready;
 use serenity::prelude::*;
 use serenity::framework::standard::{HelpBehaviour, help_commands};
-//use serenity::model::prelude::*;
 use serenity::http;
 
-//use rand::*;
-//use rand::Rng;
 use rand::distributions::{IndependentSample, Range};
 
 use std::collections::HashSet;
@@ -174,7 +171,6 @@ command!(random(_ctx, msg, _args) {
     let r1 = Range::new(6, 12);
     let r2 = Range::new(1, cmonth);
     let r3 = Range::new(1, 12);
-// TODO rewite to use rand range usize!!!
     let mut rng = rand::thread_rng();
     let year: usize = r0.ind_sample(& mut rng);
     let month: usize = match year {

@@ -158,19 +158,13 @@ fn get_month_len(month: usize) -> usize {
 command!(random(_ctx, msg, _args) {
     let utc: DateTime<Utc> = Utc::now();
     let cyear: usize = utc.year() as usize;
-    let cmonth: usize = match utc.month() as usize {
-        1 => 2,
-        _ => utc.month() as usize,
-    };
-    let cday: usize = match utc.day() as usize {
-        1 => 2,
-        _ => utc.day() as usize,
-    };
+    let cmonth: usize = utc.month() as usize;
+    let cday: usize = utc.day() as usize;
 
-    let r0 = Range::new(1978, cyear);
-    let r1 = Range::new(6, 12);
-    let r2 = Range::new(1, cmonth);
-    let r3 = Range::new(1, 12);
+    let r0 = Range::new(1978, cyear+1);
+    let r1 = Range::new(6, 13);
+    let r2 = Range::new(1, cmonth+1);
+    let r3 = Range::new(1, 13);
     let mut rng = rand::thread_rng();
     let year: usize = r0.ind_sample(& mut rng);
     let month: usize = match year {
@@ -181,12 +175,12 @@ command!(random(_ctx, msg, _args) {
     let day: usize = match year {
         1978 => {
             match month {
-                6 => Range::new(19, 30).ind_sample(& mut rng),
-                _ => Range::new(1, (get_month_len(month))).ind_sample(& mut rng),
+                6 => Range::new(19, 31).ind_sample(& mut rng),
+                _ => Range::new(1, (get_month_len(month) + 1)).ind_sample(& mut rng),
             }
             },
-        year if year == cyear => Range::new(1, cday).ind_sample(& mut rng),
-        _ => Range::new(1, (get_month_len(month))).ind_sample(& mut rng),
+        year if year == cyear => Range::new(1, cday + 1).ind_sample(& mut rng),
+        _ => Range::new(1, (get_month_len(month) + 1)).ind_sample(& mut rng),
     };
 
     let date: NaiveDate = NaiveDate::from_ymd(year as i32, month as u32, day as u32);

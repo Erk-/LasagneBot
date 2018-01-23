@@ -162,9 +162,9 @@ command!(random(_ctx, msg, _args) {
     let cday: usize = utc.day() as usize;
 
     let r0 = Range::new(1978, cyear+1);
-    let r1 = Range::new(6, 13);
+    let r1 = Range::new(6, 12+1);
     let r2 = Range::new(1, cmonth+1);
-    let r3 = Range::new(1, 13);
+    let r3 = Range::new(1, 12+1);
     let mut rng = rand::thread_rng();
     let year: usize = r0.ind_sample(& mut rng);
     let month: usize = match year {
@@ -175,7 +175,7 @@ command!(random(_ctx, msg, _args) {
     let day: usize = match year {
         1978 => {
             match month {
-                6 => Range::new(19, 31).ind_sample(& mut rng),
+                6 => Range::new(19, 30+1).ind_sample(& mut rng),
                 _ => Range::new(1, (get_month_len(month) + 1)).ind_sample(& mut rng),
             }
             },

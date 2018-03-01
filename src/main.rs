@@ -90,12 +90,12 @@ command!(about(_ctx, msg, _args) {
 fn garfield_url(date: NaiveDate) -> Option<String> {
     //1978-06-19
     let now: DateTime<Utc> = Utc::now();
-    if (date.year() < 1978 || 
-       (date.year() == 1978 && date.month() < 6 && date.day() < 19)) || 
-       (date.year() >= now.year() && date.month() >= now.month() && date.day() > now.day() + 1) {
-        None
-    } else {
+    let tday: NaiveDate = NaiveDate::from_ymd(now.year(), now.month(), now.day());
+    if date > NaiveDate::from_ymd(1978, 6, 19) && date <= tday
+    {
         Some(format!("https://d1ejxu6vysztl5.cloudfront.net/comics/garfield/{}/{}-{:02}-{:02}.gif?format=png", date.year(), date.year(), date.month(), date.day()))
+    } else {
+        None
     }
 }
 

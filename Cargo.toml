@@ -12,5 +12,5 @@ rand = "0.4"
 
 [dependencies.serenity]
 git = "https://github.com/Lakelezz/serenity.git"
-branch = "fix-command-dispatching-if-bot-mentioned"
+branch = "master"
 features = ["framework", "standard_framework"]

@@ -91,7 +91,7 @@ fn garfield_url(date: NaiveDate) -> Option<String> {
     //1978-06-19
     let now: DateTime<Utc> = Utc::now();
     let tday: NaiveDate = NaiveDate::from_ymd(now.year(), now.month(), now.day());
-    if date > NaiveDate::from_ymd(1978, 6, 19) && date <= tday
+    if date > NaiveDate::from_ymd(1978, 6, 18) && date <= tday
     {
         Some(format!("https://d1ejxu6vysztl5.cloudfront.net/comics/garfield/{}/{}-{:02}-{:02}.gif?format=png", date.year(), date.year(), date.month(), date.day()))
     } else {

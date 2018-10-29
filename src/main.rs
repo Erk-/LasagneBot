@@ -149,11 +149,15 @@ command!(stats(_ctx, msg, _args) {
     if let Err(why) = msg.channel_id.say(format!("The bot is in {} servers.", guilds.len())) {
         warn!("Error sending message: {:?}", why);
     }
-    info!("The bot is in the following guilds:");
+
+    let mut svec = Vec::new();
+
     for g in guilds {
         let pg = g.0.to_partial_guild()?;
-        info!("{}", pg.name);
+        svec.push(pg.name);
     }
+
+    info!("The bot is in the following guilds:\n{:#?}", svec);
 });
 
 command!(about(_ctx, msg, _args) {

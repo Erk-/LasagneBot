@@ -15,7 +15,7 @@ use serenity::model::gateway::Ready;
 use serenity::prelude::*;
 use serenity::http;
 
-use rand::distributions::{IndependentSample, Range};
+use rand::distributions::{Distribution, Uniform};
 
 use std::collections::HashSet;
 use std::env;
@@ -108,8 +108,8 @@ command!(yesterday(_ctx, msg, _args) {
 command!(tomorrow(_ctx, msg, _args) {
     let mut rng = rand::thread_rng();
     let time_travel: [&str; 3] = ["2017-08-07", "2015-01-08", "1998-11-14"];
-    let range = Range::new(0,3);
-    let comic_date = range.ind_sample(&mut rng);
+    let range = Uniform::new(0,3);
+    let comic_date = range.sample(&mut rng);
     let utc = match NaiveDate::parse_from_str(time_travel[comic_date], "%Y-%m-%d") {
         Ok(day) => day,
         Err(why) => {
@@ -246,26 +246,26 @@ command!(random(_ctx, msg, _args) {
     let cmonth: usize = utc.month() as usize;
     let cday: usize = utc.day() as usize;
 
-    let r0 = Range::new(1978, cyear+1);
-    let r1 = Range::new(6, 12+1);
-    let r2 = Range::new(1, cmonth+1);
-    let r3 = Range::new(1, 12+1);
+    let r0 = Uniform::new(1978, cyear+1);
+    let r1 = Uniform::new(6, 12+1);
+    let r2 = Uniform::new(1, cmonth+1);
+    let r3 = Uniform::new(1, 12+1);
     let mut rng = rand::thread_rng();
-    let year: usize = r0.ind_sample(& mut rng);
+    let year: usize = r0.sample(& mut rng);
     let month: usize = match year {
-        1978 => r1.ind_sample(& mut rng),
-        year if year == cyear => r2.ind_sample(&mut rng),
-        _ => r3.ind_sample(& mut rng),
+        1978 => r1.sample(& mut rng),
+        year if year == cyear => r2.sample(&mut rng),
+        _ => r3.sample(& mut rng),
     };
     let day: usize = match year {
         1978 => {
             match month {
-                6 => Range::new(19, 30+1).ind_sample(& mut rng),
-                _ => Range::new(1, get_month_len(month) + 1).ind_sample(& mut rng),
+                6 => Uniform::new(19, 30+1).sample(& mut rng),
+                _ => Uniform::new(1, get_month_len(month) + 1).sample(& mut rng),
             }
             },
-       year if year == cyear => Range::new(1, cday + 1).ind_sample(& mut rng),
-        _ => Range::new(1, get_month_len(month) + 1).ind_sample(& mut rng),
+       year if year == cyear => Uniform::new(1, cday + 1).sample(& mut rng),
+        _ => Uniform::new(1, get_month_len(month) + 1).sample(& mut rng),
     };
 
     let date: NaiveDate = NaiveDate::from_ymd(year as i32, month as u32, day as u32);

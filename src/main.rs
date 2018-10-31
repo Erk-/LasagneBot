@@ -1,3 +1,6 @@
+// TODO: Remove when diesel gets updated!!
+#![allow(proc_macro_derive_resolution_fallback)]
+
 #[macro_use] extern crate log;
 extern crate env_logger;
 
@@ -6,6 +9,8 @@ extern crate env_logger;
 extern crate kankyo;
 extern crate chrono;
 extern crate rand;
+#[macro_use] extern crate diesel;
+extern crate typemap;
 
 use serenity::CACHE;
 use serenity::framework::StandardFramework;
@@ -19,8 +24,26 @@ use rand::distributions::{Distribution, Uniform};
 
 use std::collections::HashSet;
 use std::env;
+use std::sync::Arc;
 
 use chrono::prelude::*;
+
+use typemap::Key;
+
+mod schema;
+mod models;
+
+use diesel::prelude::*;
+use diesel::pg::PgConnection;
+use diesel::result::QueryResult;
+
+use models::Comic;
+
+struct DataBaseConn;
+
+impl Key for DataBaseConn {
+    type Value = Arc<Mutex<PgConnection>>;
+}
 
 struct Handler;
 
@@ -34,6 +57,24 @@ impl EventHandler for Handler {
     }
 }
 
+fn establish_connection() -> PgConnection {
+    let database_url = env::var("DATABASE_URL")
+        .expect("DATABASE_URL must be set");
+    PgConnection::establish(&database_url)
+        .expect(&format!("Error connecting to {}", database_url))
+}
+
+fn add_fetch(conn: &PgConnection, date: NaiveDate) -> QueryResult<usize>  {
+    use schema::comics::dsl::*;
+    diesel::insert_into(comics)
+        .values(Comic { id: date, fetch_count: 1 })
+        .on_conflict(id)
+        .do_update()
+        .set(fetch_count.eq(fetch_count + 1))
+        .execute(conn)
+}
+
+
 fn main() {
     kankyo::load().expect("Failed to load .env file");
     env_logger::init();
@@ -42,6 +83,12 @@ fn main() {
         .expect("Expected a token in the environment");
 
     let mut client = Client::new(&token, Handler).expect("Err creating client");
+
+    {
+        let mut data = client.data.lock();
+        let connection = establish_connection();
+        data.insert::<DataBaseConn>(Arc::new(Mutex::new(connection)));
+    }
 
     let owners = match http::get_current_application_info() {
         Ok(info) => {
@@ -78,7 +125,10 @@ fn main() {
                 .desc("comic from a specific date")
                 .usage("yyyy-mm-dd"))
             .command("random", |c| c.cmd(random)
-                .desc("random comic"))
+                     .desc("random comic"))
+            .command("leaderboard", |c| c.cmd(leaderboard)
+                     .known_as("lb")
+                     .desc("Shows the most popular daily comics"))
             .command("stats", |c| c.cmd(stats)).owners_only(true)
         ));
 
@@ -200,7 +250,7 @@ command!(today(_ctx, msg, _args) {
     };
 });
 
-command!(other_day(_ctx, msg, args) {
+command!(other_day(ctx, msg, args) {
     let date = args.single::<String>().unwrap();
     let utc = match NaiveDate::parse_from_str(&date, "%Y-%m-%d") {
         Ok(day) => day,
@@ -208,6 +258,19 @@ command!(other_day(_ctx, msg, args) {
             warn!("Error: {}, input: {}", why, date);
             let _ = msg.channel_id.say("Invalid input.");
             return Ok(())
+        },
+    };
+
+    let data = ctx.data.lock();
+    match data.get::<DataBaseConn>() {
+        Some(v) => {
+            match add_fetch(&v.lock(), utc) {
+                Ok(n) => warn!("add_fetch: {}", n),
+                Err(err) => warn!("add_fetch err: {:?}", err),
+            }
+        },
+        None => {
+            warn!("Could not connect to database");
         },
     };
 
@@ -286,4 +349,33 @@ command!(random(_ctx, msg, _args) {
         })),
         None => msg.channel_id.say("Invalid date."),
     };
+});
+
+command!(leaderboard(ctx, msg, _args) {
+    use schema::comics::dsl::*;
+    let data = ctx.data.lock();
+    let connection = match data.get::<DataBaseConn>() {
+        Some(v) => v.clone(),
+        None => {
+            let _ = msg.reply("There was a problem getting the database connection");
+            return Ok(());
+        },
+    };
+    let ordered_comics: Vec<(NaiveDate, i32)> = match comics
+        .order(fetch_count.desc())
+        .limit(20)
+        .load(&*connection.lock()) {
+            Ok(s) => s,
+            Err(err) => {
+                warn!("Error getting leaderboard: {:?}", err);
+                let _ = msg.reply("There was an error getting the leaderboard!");
+                return Ok(());
+            }
+        };
+
+    let mut lb_vec = String::new();
+    for c in ordered_comics {
+        lb_vec.push_str(&format!("{} | {}\n", c.0, c.1));
+    }
+    let _ = msg.channel_id.say(&format!("**Leaderboard**\n```Date       | Count\n{}```", lb_vec));
 });
